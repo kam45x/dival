@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Provides standard datasets for benchmarking.
-"""
+"""Provides standard datasets for benchmarking."""
 from warnings import warn
 from functools import partial
 import numpy as np
 import odl
 from dival.datasets.ellipses_dataset import EllipsesDataset
 from dival.datasets.lodopab_dataset import LoDoPaBDataset
+from dival.datasets.custom_dataset import CustomDataset
 from dival.datasets.angle_subset_dataset import get_angle_subset_dataset
 from dival.util.odl_utility import ResizeOperator
 
 
-STANDARD_DATASET_NAMES = ['ellipses', 'lodopab']
+STANDARD_DATASET_NAMES = ["ellipses", "lodopab", "custom"]
 
 
 def get_standard_dataset(name, **kwargs):
@@ -109,6 +109,17 @@ def get_standard_dataset(name, **kwargs):
                         optional
                     Implementation passed to :class:`odl.tomo.RayTransform`
                     Default: ``'astra_cuda'``.
+            ``'custom'``
+                data_path : str
+                    Path to the folder containing the dataset files.
+                sinogram_shape : tuple of int
+                    Shape of the sinograms (num_angles, num_detectors).
+                image_shape : tuple of int
+                    Shape of the images (height, width).
+                parts_len : dict
+                    Dictionary with keys 'train', 'validation', 'test' and
+                    integer values indicating the number of samples in each
+                    part.
 
     Returns
     -------
@@ -117,57 +128,61 @@ def get_standard_dataset(name, **kwargs):
         It has an attribute `standard_dataset_name` that stores its name.
     """
     name = name.lower()
-    if name == 'ellipses':
-        fixed_seeds = kwargs.pop('fixed_seeds', False)
-        ellipses_dataset = EllipsesDataset(image_size=128,
-                                           fixed_seeds=fixed_seeds)
+    if name == "ellipses":
+        fixed_seeds = kwargs.pop("fixed_seeds", False)
+        ellipses_dataset = EllipsesDataset(image_size=128, fixed_seeds=fixed_seeds)
 
         NUM_ANGLES = 30
         # image shape for simulation
         IM_SHAPE = (400, 400)  # images will be scaled up from (128, 128)
 
         reco_space = ellipses_dataset.space
-        space = odl.uniform_discr(min_pt=reco_space.min_pt,
-                                  max_pt=reco_space.max_pt,
-                                  shape=IM_SHAPE, dtype=np.float32)
+        space = odl.uniform_discr(
+            min_pt=reco_space.min_pt,
+            max_pt=reco_space.max_pt,
+            shape=IM_SHAPE,
+            dtype=np.float32,
+        )
 
         reco_geometry = odl.tomo.parallel_beam_geometry(
-            reco_space, num_angles=NUM_ANGLES)
+            reco_space, num_angles=NUM_ANGLES
+        )
         geometry = odl.tomo.parallel_beam_geometry(
-            space, num_angles=NUM_ANGLES,
-            det_shape=reco_geometry.detector.shape)
+            space, num_angles=NUM_ANGLES, det_shape=reco_geometry.detector.shape
+        )
 
-        impl = kwargs.pop('impl', 'astra_cuda')
+        impl = kwargs.pop("impl", "astra_cuda")
         ray_trafo = odl.tomo.RayTransform(space, geometry, impl=impl)
 
-        reco_ray_trafo = odl.tomo.RayTransform(reco_space, reco_geometry,
-                                               impl=impl)
+        reco_ray_trafo = odl.tomo.RayTransform(reco_space, reco_geometry, impl=impl)
 
         # forward operator
         resize_op = ResizeOperator(reco_space, space)
         forward_op = ray_trafo * resize_op
 
-        noise_seeds = kwargs.pop('fixed_noise_seeds', True)
+        noise_seeds = kwargs.pop("fixed_noise_seeds", True)
         if isinstance(noise_seeds, bool):
-            noise_seeds = ({'train': 1, 'validation': 2, 'test': 3}
-                           if noise_seeds else None)
+            noise_seeds = (
+                {"train": 1, "validation": 2, "test": 3} if noise_seeds else None
+            )
 
         dataset = ellipses_dataset.create_pair_dataset(
-            forward_op=forward_op, noise_type='white',
-            noise_kwargs={'relative_stddev': True,
-                          'stddev': 0.025},
-            noise_seeds=noise_seeds)
+            forward_op=forward_op,
+            noise_type="white",
+            noise_kwargs={"relative_stddev": True, "stddev": 0.025},
+            noise_seeds=noise_seeds,
+        )
 
-        dataset.get_ray_trafo = partial(odl.tomo.RayTransform,
-                                        reco_space, reco_geometry)
+        dataset.get_ray_trafo = partial(
+            odl.tomo.RayTransform, reco_space, reco_geometry
+        )
         dataset.ray_trafo = reco_ray_trafo
 
-    elif name == 'lodopab':
+    elif name == "lodopab":
 
-        num_angles = kwargs.pop('num_angles', None)
+        num_angles = kwargs.pop("num_angles", None)
         lodopab_kwargs = {}
-        for k in ['observation_model', 'min_photon_count', 'sorted_by_patient',
-                  'impl']:
+        for k in ["observation_model", "min_photon_count", "sorted_by_patient", "impl"]:
             if k in kwargs:
                 lodopab_kwargs[k] = kwargs.pop(k)
 
@@ -175,15 +190,57 @@ def get_standard_dataset(name, **kwargs):
 
         if num_angles is not None:
             dataset = get_angle_subset_dataset(
-                dataset, num_angles, impl=kwargs.get('impl', 'astra_cuda'))
+                dataset, num_angles, impl=kwargs.get("impl", "astra_cuda")
+            )
+
+    elif name == "custom":
+        data_path = kwargs.pop("data_path", None)
+        if data_path is None:
+            raise ValueError(
+                "for 'custom' dataset, 'data_path' argument " "must be provided"
+            )
+
+        sinogram_shape = kwargs.pop("sinogram_shape", None)
+        if sinogram_shape is None:
+            raise ValueError(
+                "for 'custom' dataset, 'sinogram_shape' argument " "must be provided"
+            )
+
+        image_shape = kwargs.pop("image_shape", None)
+        if image_shape is None:
+            raise ValueError(
+                "for 'custom' dataset, 'image_shape' argument " "must be provided"
+            )
+
+        parts_len = kwargs.pop("parts_len", None)
+        if parts_len is None:
+            raise ValueError(
+                "for 'custom' dataset, 'parts_len' argument " "must be provided"
+            )
+
+        custom_dataset_kwargs = {}
+        for k in ["observation_model", "min_photon_count", "impl"]:
+            if k in kwargs:
+                custom_dataset_kwargs[k] = kwargs.pop(k)
+
+        dataset = CustomDataset(
+            data_path=data_path,
+            sinogram_shape=sinogram_shape,
+            image_shape=image_shape,
+            parts_len=parts_len,
+            **custom_dataset_kwargs,
+        )
 
     else:
-        raise ValueError("unknown dataset '{}'. Known standard datasets are {}"
-                         .format(name, STANDARD_DATASET_NAMES))
+        raise ValueError(
+            "unknown dataset '{}'. Known standard datasets are {}".format(
+                name, STANDARD_DATASET_NAMES
+            )
+        )
 
     if kwargs:
-        warn('unused keyword arguments: {}'
-             .format(', '.join(kwargs.keys())))
+        warn("unused keyword arguments: {}".format(", ".join(kwargs.keys())))
 
     dataset.standard_dataset_name = name
+
     return dataset
