@@ -3,9 +3,7 @@
 Library for testing and comparing deep learning based methods for inverse
 problems, written in python.
 
-See the [documentation](https://jleuschn.github.io/docs.dival/).
-
-The project is also available on [PyPI](https://pypi.org/project/dival/).
+This is fork of [jleuschn/dival](https://github.com/jleuschn/dival).
 
 ## Standard datasets
 
@@ -21,6 +19,9 @@ Currently, the following datasets are included:
     [LIDC-IDRI](https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI)
     dataset. See also the ``LoDoPaBDataset`` class defined in
     [lodopab_dataset](https://github.com/jleuschn/dival/blob/master/dival/datasets/lodopab_dataset.py).
+* ``'custom'``:
+    Added in fork.
+    Custom dataset, got from some directory, which has structure similar to the LoDoPaB sataset.
 
 These datasets can be accessed by calling ``dival.get_standard_dataset(name)``.
 
@@ -42,3 +43,10 @@ let us know!
 
 Also, bug reports and suggestions on improving our library are welcome.
 Please file an issue for such a purpose.
+
+## Install 
+To install that fork od dival:
+```
+cd your_dival_ws/dival
+pip install -e .
+```

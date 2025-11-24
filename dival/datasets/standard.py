@@ -67,6 +67,13 @@ def get_standard_dataset(name, **kwargs):
                     noiseless forward operator. Keyword arguments (e.g. `impl`)
                     are forwarded to the :class:`RayTransform` constructor.
 
+        ``'custom'``
+            A custom dataset stored in HDF5 files.
+            The dataset files must be stored in a folder specified by the user.
+            Each file contains a number of samples of observations and ground
+            truths stored as datasets named 'observation' and 'ground_truth',
+            respectively.
+
     Parameters
     ----------
     name : str
