@@ -227,14 +227,14 @@ class CustomDataset(Dataset):
         for i in range(num_files):
             with h5py.File(
                 os.path.join(
-                    self.data_path, "ground_truth_{}_{:03d}.hdf5".format(part, i)
+                    self.data_path, "ground_truth_{}_{:04d}.hdf5".format(part, i)
                 ),
                 "r",
             ) as file:
                 ground_truth_data = file["data"][:]
             with h5py.File(
                 os.path.join(
-                    self.data_path, "observation_{}_{:03d}.hdf5".format(part, i)
+                    self.data_path, "observation_{}_{:04d}.hdf5".format(part, i)
                 ),
                 "r",
             ) as file:
@@ -338,7 +338,7 @@ class CustomDataset(Dataset):
             with h5py.File(
                 os.path.join(
                     self.data_path,
-                    "observation_{}_{:03d}.hdf5".format(part, file_index),
+                    "observation_{}_{:04d}.hdf5".format(part, file_index),
                 ),
                 "r",
             ) as file:
@@ -353,7 +353,7 @@ class CustomDataset(Dataset):
             with h5py.File(
                 os.path.join(
                     self.data_path,
-                    "ground_truth_{}_{:03d}.hdf5".format(part, file_index),
+                    "ground_truth_{}_{:04d}.hdf5".format(part, file_index),
                 ),
                 "r",
             ) as file:
@@ -481,7 +481,7 @@ class CustomDataset(Dataset):
             for i, slc_f, slc_d in zip(range_files, slices_files, slices_data):
                 with h5py.File(
                     os.path.join(
-                        self.data_path, "observation_{}_{:03d}.hdf5".format(part, i)
+                        self.data_path, "observation_{}_{:04d}.hdf5".format(part, i)
                     ),
                     "r",
                 ) as file:
@@ -492,7 +492,7 @@ class CustomDataset(Dataset):
             for i, slc_f, slc_d in zip(range_files, slices_files, slices_data):
                 with h5py.File(
                     os.path.join(
-                        self.data_path, "ground_truth_{}_{:03d}.hdf5".format(part, i)
+                        self.data_path, "ground_truth_{}_{:04d}.hdf5".format(part, i)
                     ),
                     "r",
                 ) as file:
@@ -517,10 +517,10 @@ class CustomDataset(Dataset):
             Whether the dataset seems to exist.
         """
         for part in ["train", "validation", "test"]:
-            first_file = os.path.join(data_path, "observation_{}_000.hdf5".format(part))
+            first_file = os.path.join(data_path, "observation_{}_0000.hdf5".format(part))
             last_file = os.path.join(
                 data_path,
-                "observation_{}_{:03d}.hdf5".format(
+                "observation_{}_{:04d}.hdf5".format(
                     part, ceil(parts_len[part] / NUM_SAMPLES_PER_FILE) - 1
                 ),
             )
